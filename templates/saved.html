@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Saved · {{ invoice.record_id }}{% endblock %}
+{% block content %}
+<section class="saved-card card">
+  <div class="success-mark">✓</div>
+  <p class="eyebrow">Saved securely</p>
+  <h1>{{ invoice.document_type }} {{ invoice.invoice_number }}</h1>
+  <p>Your record ID is <strong>{{ invoice.record_id }}</strong>.</p>
+
+  {% if access_code %}
+  <div class="access-code-panel">
+    <p><strong>Save this private access code now.</strong> It is shown only once and cannot be recovered.</p>
+    <code id="access-code">{{ access_code }}</code>
+    <button class="button button-small" type="button" data-copy-target="access-code">Copy access code</button>
+  </div>
+  {% else %}
+  <p class="muted">This browser is currently authorized. You will need the private access code on another browser or after clearing cookies.</p>
+  {% endif %}
+
+  <div class="saved-actions">
+    <a class="button button-primary" href="{{ url_for('invoice_pdf', record_id=invoice.record_id) }}">Download PDF</a>
+    <a class="button button-secondary" href="{{ url_for('edit_invoice', record_id=invoice.record_id) }}">Edit invoice</a>
+  </div>
+  <form action="{{ url_for('lock_invoice', record_id=invoice.record_id) }}" method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <button class="link-button" type="submit">Lock this invoice on this browser</button>
+  </form>
+</section>
+{% endblock %}
+

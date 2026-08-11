@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4; margin: 22mm 18mm; }
+    body { color: #1f2937; font-family: Arial, sans-serif; font-size: 11pt; }
+    h1 { color: #123c5a; font-size: 27pt; margin: 0 0 5px; }
+    h2 { color: #123c5a; font-size: 14pt; margin: 25px 0 8px; }
+    p { margin: 3px 0; }
+    .top { border-bottom: 3px solid #22a699; padding-bottom: 16px; }
+    .meta { display: table; width: 100%; margin-top: 20px; }
+    .meta > div { display: table-cell; width: 50%; vertical-align: top; }
+    table { border-collapse: collapse; margin-top: 8px; width: 100%; }
+    th { background: #e7f4f2; color: #123c5a; text-align: left; }
+    th, td { border-bottom: 1px solid #d6dee3; padding: 8px; }
+    .number { text-align: right; white-space: nowrap; }
+    .summary-section { page-break-before: always; }
+    .summary { margin-left: auto; width: 68%; }
+    .total { background: #123c5a; color: white; font-size: 13pt; font-weight: bold; }
+    .footer { border-top: 1px solid #d6dee3; color: #5b6870; margin-top: 35px; padding-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <h1>{{ invoice.business_name }}</h1>
+    {% if invoice.business_email %}<p>{{ invoice.business_email }}</p>{% endif %}
+    {% if invoice.business_phone %}<p>{{ invoice.business_phone }}</p>{% endif %}
+  </div>
+  <div class="meta">
+    <div>
+      <h2>{{ invoice.document_type }} details</h2>
+      <p><strong>Number:</strong> {{ invoice.invoice_number }}</p>
+      <p><strong>Issue date:</strong> {{ invoice.issue_date }}</p>
+    </div>
+    <div>
+      <h2>Bill to</h2>
+      <p><strong>{{ invoice.client_name }}</strong></p>
+      {% if invoice.client_email %}<p>{{ invoice.client_email }}</p>{% endif %}
+      {% if invoice.client_address %}<p>{{ invoice.client_address }}</p>{% endif %}
+    </div>
+  </div>
+
+  <h2>Labour</h2>
+  <table>
+    <thead><tr><th>Description</th><th class="number">Rate</th><th class="number">Hours</th><th class="number">Total</th></tr></thead>
+    <tbody>
+    {% for item in totals.line_items %}
+      <tr><td>{{ item.description }}</td><td class="number">{{ invoice.currency }}{{ '%.2f'|format(item.rate) }}</td><td class="number">{{ '%.2f'|format(item.quantity) }}</td><td class="number">{{ invoice.currency }}{{ '%.2f'|format(item.total) }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  {% if totals.materials %}
+  <h2>Materials</h2>
+  <table>
+    <thead><tr><th>Description</th><th class="number">Cost</th></tr></thead>
+    <tbody>{% for item in totals.materials %}<tr><td>{{ item.description }}</td><td class="number">{{ invoice.currency }}{{ '%.2f'|format(item.cost) }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% endif %}
+
+  <div class="summary-section">
+  <h2>{{ invoice.document_type }} summary</h2>
+  <table class="summary">
+    <tr><td>Labour subtotal</td><td class="number">{{ invoice.currency }}{{ '%.2f'|format(totals.subtotal) }}</td></tr>
+    <tr><td>VAT on labour ({{ '%.2f'|format(totals.vat_percentage) }}%)</td><td class="number">{{ invoice.currency }}{{ '%.2f'|format(totals.vat_on_line_items) }}</td></tr>
+    {% if totals.materials %}
+    <tr><td>Materials subtotal</td><td class="number">{{ invoice.currency }}{{ '%.2f'|format(totals.materials_total) }}</td></tr>
+    <tr><td>VAT on materials ({{ '%.2f'|format(totals.vat_percentage) }}%)</td><td class="number">{{ invoice.currency }}{{ '%.2f'|format(totals.vat_on_materials) }}</td></tr>
+    {% endif %}
+    <tr class="total"><td>Total</td><td class="number">{{ invoice.currency }}{{ '%.2f'|format(totals.total) }}</td></tr>
+  </table>
+
+  {% if invoice.bank_name and invoice.account_number %}
+  <div class="footer"><strong>Payment details (EFT)</strong><p>Bank: {{ invoice.bank_name }}</p><p>Account: {{ invoice.account_number }}</p></div>
+  {% endif %}
+  </div>
+</body>
+</html>

@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if editing else "Create" }} invoice · Invoice Keeper{% endblock %}
+{% block content %}
+<div class="editor-heading">
+  <div>
+    <p class="eyebrow">{{ "Saved record" if editing else "New record" }}</p>
+    <h1>{{ "Edit your invoice" if editing else "Create an invoice or quote" }}</h1>
+  </div>
+  {% if editing %}<span class="record-chip">ID: {{ values.record_id }}</span>{% endif %}
+</div>
+
+{% if errors %}
+<div class="notice notice-error">
+  <strong>Please fix the following:</strong>
+  <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<form class="invoice-form" method="post" action="{{ url_for('update_invoice', record_id=values.record_id) if editing else url_for('create_invoice') }}">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  {% if editing %}<input type="hidden" name="record_id" value="{{ values.record_id }}">{% endif %}
+
+  <section class="form-section accent-section">
+    <h2>Record & document</h2>
+    <div class="form-grid columns-3">
+      {% if not editing %}
+      <label>Record ID <span class="required">required</span>
+        <input name="record_id" value="{{ values.record_id }}" required pattern="[A-Za-z0-9][A-Za-z0-9_-]{2,39}" placeholder="acme-august-2026">
+        <small>3–40 letters, numbers, hyphens, or underscores.</small>
+      </label>
+      {% endif %}
+      <label>Document type
+        <select name="document_type" required>
+          {% for option in ["Invoice", "Quote"] %}<option value="{{ option }}" {% if values.document_type == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Invoice / quote number
+        <input name="invoice_number" value="{{ values.invoice_number }}" required>
+      </label>
+      <label>Issue date
+        <input name="issue_date" type="date" value="{{ values.issue_date }}" required>
+      </label>
+      <label>Currency
+        <select name="currency" required>
+          {% for value, label in [("R", "South African Rand (R)"), ("$", "US Dollar ($)"), ("€", "Euro (€)"), ("£", "British Pound (£)")] %}
+          <option value="{{ value }}" {% if values.currency == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>VAT percentage
+        <input name="vat_percentage" type="number" min="0" max="100" step="0.01" value="{{ values.vat_percentage }}" required>
+      </label>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h2>Business details</h2>
+    <div class="form-grid columns-3">
+      <label>Business name <input name="business_name" value="{{ values.business_name }}" required></label>
+      <label>Email <input name="business_email" type="email" value="{{ values.business_email }}"></label>
+      <label>Phone <input name="business_phone" value="{{ values.business_phone }}"></label>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h2>Client details</h2>
+    <div class="form-grid columns-2">
+      <label>Client name <input name="client_name" value="{{ values.client_name }}" required></label>
+      <label>Client email <input name="client_email" type="email" value="{{ values.client_email }}"></label>
+      <label class="span-all">Client address <textarea name="client_address" rows="3">{{ values.client_address }}</textarea></label>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <div class="section-title-row"><h2>Labour line items</h2><button class="button button-small" type="button" data-add-row="labour">+ Add labour</button></div>
+    <div id="labour-rows" class="item-list">
+      {% for item in values.line_items %}
+      <div class="item-row labour-row">
+        <label>Description <input name="description" value="{{ item.description }}"></label>
+        <label>Rate / hour <input name="rate" type="number" min="0" step="0.01" value="{{ item.rate }}"></label>
+        <label>Hours <input name="quantity" type="number" min="0" step="0.01" value="{{ item.quantity }}"></label>
+        <button class="remove-row" type="button" aria-label="Remove labour item">×</button>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="form-section">
+    <div class="section-title-row"><h2>Materials</h2><button class="button button-small" type="button" data-add-row="material">+ Add material</button></div>
+    <div id="material-rows" class="item-list">
+      {% for item in values.materials %}
+      <div class="item-row material-row">
+        <label>Description <input name="material_description" value="{{ item.description }}"></label>
+        <label>Cost <input name="material_cost" type="number" min="0" step="0.01" value="{{ item.cost }}"></label>
+        <button class="remove-row" type="button" aria-label="Remove material item">×</button>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h2>Banking details <span class="muted">optional</span></h2>
+    <div class="form-grid columns-2">
+      <label>Bank name <input name="bank_name" value="{{ values.bank_name }}"></label>
+      <label>Account number <input name="account_number" value="{{ values.account_number }}"></label>
+    </div>
+  </section>
+
+  <div class="form-actions">
+    <button class="button button-primary" type="submit">{{ "Save changes" if editing else "Save invoice" }}</button>
+    <a class="button button-ghost" href="{{ url_for('home') }}">Cancel</a>
+  </div>
+</form>
+
+<template id="labour-template">
+  <div class="item-row labour-row">
+    <label>Description <input name="description"></label>
+    <label>Rate / hour <input name="rate" type="number" min="0" step="0.01"></label>
+    <label>Hours <input name="quantity" type="number" min="0" step="0.01"></label>
+    <button class="remove-row" type="button" aria-label="Remove labour item">×</button>
+  </div>
+</template>
+<template id="material-template">
+  <div class="item-row material-row">
+    <label>Description <input name="material_description"></label>
+    <label>Cost <input name="material_cost" type="number" min="0" step="0.01"></label>
+    <button class="remove-row" type="button" aria-label="Remove material item">×</button>
+  </div>
+</template>
+{% endblock %}
+
