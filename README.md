@@ -34,6 +34,11 @@ DYLD_LIBRARY_PATH=/opt/homebrew/lib .venv/bin/python -m pytest
 
 ## Render deployment
 
-`render.yaml` defines a separate free web service and the smallest persistent paid PostgreSQL configuration in Frankfurt (Basic-256mb compute and 1 GB storage). The free PostgreSQL plan is intentionally not used because Render deletes free databases after 30 days.
+`render.yaml` defines a separate free web service in Frankfurt. Persistent data is stored in the external Neon Postgres project `invoice-generator-v2-eu`, also in Frankfurt (`aws-eu-central-1`).
 
-Do not apply the Blueprint until the database price has been reviewed and approved.
+Set these private environment variables in Render before deploying:
+
+- `DATABASE_URL`: the pooled Neon connection string. Never commit it to Git.
+- `SECRET_KEY`: a long random value used to protect Flask sessions.
+
+The application creates its initial `invoices` table on startup. Future schema changes should use migrations rather than relying on `create_all`.
