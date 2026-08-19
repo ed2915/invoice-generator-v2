@@ -66,6 +66,9 @@ def test_create_invoice_generates_one_time_access_code(app, client):
     response = client.post("/invoices", data=valid_invoice(csrf(client)), follow_redirects=True)
     assert response.status_code == 200
     assert b"Save this private access code now" in response.data
+    match = re.search(rb'<code id="access-code">([^<]+)</code>', response.data)
+    assert match
+    assert re.fullmatch(rb"[A-Z0-9]{5}", match.group(1))
 
     database = app.extensions["database"]
     invoice = database.query(Invoice).filter_by(record_id="acme-august-2026").one()

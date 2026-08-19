@@ -152,8 +152,7 @@ def canonical_record_id(value: str) -> str:
 
 
 def generate_access_code() -> str:
-    raw = "".join(secrets.choice(ACCESS_ALPHABET) for _ in range(20))
-    return "-".join(raw[index : index + 5] for index in range(0, len(raw), 5))
+    return "".join(secrets.choice(ACCESS_ALPHABET) for _ in range(5))
 
 
 def parse_decimal(value, label, errors, *, minimum=Decimal("0"), maximum=None):

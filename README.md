@@ -5,7 +5,7 @@ A persistent Flask invoice and quote generator. Users choose a memorable record 
 ## Security model
 
 - Record IDs are identifiers, not secrets.
-- A random 20-character access code protects editing and PDF access.
+- A random five-character uppercase letter/digit access code protects editing and PDF access.
 - Only a password hash is stored in the database.
 - CSRF protection, secure response headers, request-size limits, non-negative numeric validation, and item-count limits are built in.
 - Invoice contents (including any banking details entered by a user) are stored in the configured PostgreSQL database. Treat database access and backups as sensitive.
