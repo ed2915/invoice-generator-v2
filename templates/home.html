@@ -5,12 +5,12 @@
   <div>
     <p class="eyebrow">Persistent invoices and quotes</p>
     <h1>Pick up where you left off.</h1>
-    <p class="lead">Create an invoice, give it a memorable record ID, and return later with the private access code.</p>
+    <p class="lead">Create an invoice, give it a memorable record ID, and use that ID to return whenever you need it.</p>
     <a class="button button-primary" href="{{ url_for('new_invoice') }}">Create a new invoice</a>
   </div>
   <div class="security-card">
-    <strong>Your record ID is not a password.</strong>
-    <p>We generate a separate access code so a guessed invoice ID cannot reveal client or banking details.</p>
+    <strong>Choose a unique record ID.</strong>
+    <p>Each record ID can only be used once. Anyone who knows it can open the saved invoice or quote.</p>
   </div>
 </section>
 
@@ -23,9 +23,6 @@
     <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
     <label>Record ID
       <input name="record_id" value="{{ suggested_record_id }}" required autocomplete="off" placeholder="e.g. acme-august-2026">
-    </label>
-    <label>Private access code
-      <input name="access_code" required autocomplete="off" placeholder="A7K2Q">
     </label>
     <button class="button button-secondary" type="submit">Open invoice</button>
   </form>

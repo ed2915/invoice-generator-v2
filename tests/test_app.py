@@ -1,5 +1,4 @@
 from decimal import Decimal
-import re
 
 import pytest
 
@@ -62,36 +61,29 @@ def test_health(client):
     assert response.json == {"status": "ok"}
 
 
-def test_create_invoice_generates_one_time_access_code(app, client):
+def test_create_invoice_saves_without_access_code(app, client):
     response = client.post("/invoices", data=valid_invoice(csrf(client)), follow_redirects=True)
     assert response.status_code == 200
-    assert b"Save this private access code now" in response.data
-    match = re.search(rb'<code id="access-code">([^<]+)</code>', response.data)
-    assert match
-    assert re.fullmatch(rb"[A-Z0-9]{5}", match.group(1))
+    assert b"Keep it so you can return" in response.data
+    assert b"access code" not in response.data.lower()
 
     database = app.extensions["database"]
     invoice = database.query(Invoice).filter_by(record_id="acme-august-2026").one()
     assert invoice.business_name == "Acme Services"
-    assert invoice.access_code_hash != ""
+    assert invoice.access_code_hash == ""
 
 
 def test_duplicate_record_id_is_rejected(client):
     first = valid_invoice(csrf(client))
     assert client.post("/invoices", data=first).status_code == 302
-    second = valid_invoice(csrf(client))
+    second = valid_invoice(csrf(client), record_id="ACME-AUGUST-2026")
     response = client.post("/invoices", data=second)
     assert response.status_code == 400
     assert b"already in use" in response.data
 
 
-def test_private_access_code_reopens_and_updates_invoice(app, client):
-    created = client.post(
-        "/invoices", data=valid_invoice(csrf(client)), follow_redirects=True
-    )
-    match = re.search(rb'<code id="access-code">([^<]+)</code>', created.data)
-    assert match
-    access_code = match.group(1).decode()
+def test_record_id_reopens_and_updates_invoice(app, client):
+    client.post("/invoices", data=valid_invoice(csrf(client)))
 
     returning_client = app.test_client()
     opened = returning_client.post(
@@ -99,7 +91,6 @@ def test_private_access_code_reopens_and_updates_invoice(app, client):
         data={
             "_csrf": csrf(returning_client),
             "record_id": "ACME-August-2026",
-            "access_code": access_code.lower(),
         },
         follow_redirects=True,
     )
@@ -121,7 +112,7 @@ def test_private_access_code_reopens_and_updates_invoice(app, client):
     assert invoice.business_name == "Acme Services Updated"
 
 
-def test_wrong_access_code_does_not_open_invoice(client):
+def test_unknown_record_id_does_not_open_invoice(client):
     client.post("/invoices", data=valid_invoice(csrf(client)))
     client.post(
         "/invoices/acme-august-2026/lock",
@@ -131,12 +122,11 @@ def test_wrong_access_code_does_not_open_invoice(client):
         "/open",
         data={
             "_csrf": csrf(client),
-            "record_id": "acme-august-2026",
-            "access_code": "WRONG-WRONG-WRONG-WRONG",
+            "record_id": "does-not-exist",
         },
         follow_redirects=True,
     )
-    assert b"Record ID or access code is incorrect" in response.data
+    assert b"No saved invoice or quote was found" in response.data
 
 
 def test_pdf_generation(client):
@@ -198,7 +188,7 @@ def test_edit_requires_authorization(client):
 def test_totals_use_decimal_math():
     invoice = Invoice(
         record_id="test",
-        access_code_hash="hash",
+        access_code_hash="",
         document_type="Invoice",
         business_name="Business",
         client_name="Client",

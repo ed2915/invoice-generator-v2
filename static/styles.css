@@ -26,7 +26,7 @@ h2 { margin: 0 0 18px; }
 .security-card { background: var(--teal-light); border-left: 5px solid var(--teal); border-radius: 12px; line-height: 1.55; padding: 25px; }
 .card, .form-section { background: var(--paper); border: 1px solid rgba(18, 60, 90, .08); border-radius: 16px; box-shadow: var(--shadow); padding: 30px; }
 .open-card { align-items: start; display: grid; gap: 40px; grid-template-columns: .8fr 2fr; }
-.open-form { display: grid; gap: 18px; grid-template-columns: 1fr 1fr auto; }
+.open-form { display: grid; gap: 18px; grid-template-columns: 1fr auto; }
 label { color: var(--ink); display: grid; font-size: .88rem; font-weight: 700; gap: 7px; }
 input, textarea, select { background: white; border: 1px solid #bdcbd3; border-radius: 8px; color: var(--ink); font: inherit; min-width: 0; padding: 11px 12px; width: 100%; }
 input:focus, textarea:focus, select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(22, 143, 132, .14); outline: none; }
@@ -61,8 +61,6 @@ small, .muted { color: var(--muted); font-weight: 400; }
 .saved-card { margin: 20px auto; max-width: 760px; text-align: center; }
 .saved-card h1 { font-size: clamp(2rem, 4vw, 3.2rem); }
 .success-mark { align-items: center; background: var(--teal-light); border-radius: 50%; color: var(--teal); display: flex; font-size: 2rem; font-weight: 900; height: 65px; justify-content: center; margin: 0 auto 20px; width: 65px; }
-.access-code-panel { background: #f2f7fa; border: 1px dashed var(--navy); border-radius: 12px; margin: 28px 0; padding: 22px; }
-.access-code-panel code { display: block; font-size: clamp(1rem, 4vw, 1.7rem); font-weight: 800; letter-spacing: .07em; margin: 14px 0; }
 .saved-actions { justify-content: center; margin: 25px 0; }
 .link-button { background: none; border: 0; color: var(--muted); cursor: pointer; text-decoration: underline; }
 @media (max-width: 800px) {
@@ -73,4 +71,3 @@ small, .muted { color: var(--muted); font-weight: 400; }
   .tagline { display: none; }
   .editor-heading { align-items: start; flex-direction: column; }
 }
-

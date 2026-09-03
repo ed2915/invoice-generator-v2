@@ -1,12 +1,11 @@
 # Invoice Generator V2
 
-A persistent Flask invoice and quote generator. Users choose a memorable record ID, receive a private access code, and can return later to edit and regenerate the PDF.
+A persistent Flask invoice and quote generator. Users choose a memorable record ID and can return later with that ID to edit and regenerate the PDF.
 
-## Security model
+## Access model
 
-- Record IDs are identifiers, not secrets.
-- A random five-character uppercase letter/digit access code protects editing and PDF access.
-- Only a password hash is stored in the database.
+- Each record ID is unique and cannot be reused for another invoice or quote.
+- The record ID is the only credential needed to reopen a saved record. Anyone who knows or guesses it can access the invoice and any details it contains.
 - CSRF protection, secure response headers, request-size limits, non-negative numeric validation, and item-count limits are built in.
 - Invoice contents (including any banking details entered by a user) are stored in the configured PostgreSQL database. Treat database access and backups as sensitive.
 

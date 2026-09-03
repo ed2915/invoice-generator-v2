@@ -9,15 +9,4 @@ document.addEventListener("click", (event) => {
 
   const removeButton = event.target.closest(".remove-row");
   if (removeButton) removeButton.closest(".item-row")?.remove();
-
-  const copyButton = event.target.closest("[data-copy-target]");
-  if (copyButton) {
-    const source = document.getElementById(copyButton.dataset.copyTarget);
-    if (source) {
-      navigator.clipboard.writeText(source.textContent.trim()).then(() => {
-        copyButton.textContent = "Copied";
-      });
-    }
-  }
 });
-

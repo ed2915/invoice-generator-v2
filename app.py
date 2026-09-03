@@ -3,7 +3,6 @@ import logging
 import os
 import re
 import secrets
-import string
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from functools import wraps
@@ -25,7 +24,6 @@ from sqlalchemy import JSON, DateTime, Integer, String, Text, create_engine, sel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, scoped_session, sessionmaker
 from sqlalchemy.pool import StaticPool
-from werkzeug.security import check_password_hash, generate_password_hash
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -33,7 +31,6 @@ logger = logging.getLogger(__name__)
 
 MONEY = Decimal("0.01")
 RECORD_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{2,39}$")
-ACCESS_ALPHABET = string.ascii_uppercase + string.digits
 
 
 class Base(DeclarativeBase):
@@ -45,7 +42,9 @@ class Invoice(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     record_id: Mapped[str] = mapped_column(String(40), unique=True, index=True)
-    access_code_hash: Mapped[str] = mapped_column(String(255))
+    # Retained for compatibility with the existing production table. Access is
+    # now granted using the record ID alone, so new rows store an empty value.
+    access_code_hash: Mapped[str] = mapped_column(String(255), default="")
     document_type: Mapped[str] = mapped_column(String(10))
     business_name: Mapped[str] = mapped_column(String(160))
     business_email: Mapped[str] = mapped_column(String(254), default="")
@@ -149,10 +148,6 @@ def get_csrf_token():
 
 def canonical_record_id(value: str) -> str:
     return (value or "").strip().lower()
-
-
-def generate_access_code() -> str:
-    return "".join(secrets.choice(ACCESS_ALPHABET) for _ in range(5))
 
 
 def parse_decimal(value, label, errors, *, minimum=Decimal("0"), maximum=None):
@@ -376,7 +371,7 @@ def require_invoice_access(view):
     def wrapped(record_id, *args, **kwargs):
         record_id = canonical_record_id(record_id)
         if not is_authorized(record_id):
-            flash("Enter the record ID and private access code to continue.", "warning")
+            flash("Enter the record ID to continue.", "warning")
             return redirect(url_for("home", record_id=record_id))
         return view(record_id, *args, **kwargs)
 
@@ -426,10 +421,9 @@ def register_routes(app, database):
         if errors:
             return render_template("editor.html", values=values, errors=errors, editing=False), 400
 
-        access_code = generate_access_code()
         invoice = Invoice(
             record_id=values["record_id"],
-            access_code_hash=generate_password_hash(access_code),
+            access_code_hash="",
             document_type=values["document_type"],
             business_name=values["business_name"],
             client_name=values["client_name"],
@@ -447,17 +441,15 @@ def register_routes(app, database):
             return render_template("editor.html", values=values, errors=errors, editing=False), 409
 
         authorize(invoice.record_id)
-        session["new_access_code"] = {"record_id": invoice.record_id, "code": access_code}
         logger.info("Created invoice record %s", invoice.record_id)
         return redirect(url_for("saved_invoice", record_id=invoice.record_id))
 
     @app.post("/open")
     def open_invoice():
         record_id = canonical_record_id(request.form.get("record_id"))
-        access_code = (request.form.get("access_code") or "").strip().upper()
         invoice = find_invoice(record_id)
-        if not invoice or not check_password_hash(invoice.access_code_hash, access_code):
-            flash("Record ID or access code is incorrect.", "error")
+        if not invoice:
+            flash("No saved invoice or quote was found for that record ID.", "error")
             return redirect(url_for("home", record_id=record_id))
         authorize(record_id)
         return redirect(url_for("edit_invoice", record_id=record_id))
@@ -493,11 +485,7 @@ def register_routes(app, database):
         invoice = find_invoice(record_id)
         if not invoice:
             abort(404)
-        access_code = None
-        one_time = session.pop("new_access_code", None)
-        if one_time and one_time.get("record_id") == record_id:
-            access_code = one_time.get("code")
-        return render_template("saved.html", invoice=invoice, access_code=access_code)
+        return render_template("saved.html", invoice=invoice)
 
     @app.get("/invoices/<record_id>/pdf")
     @require_invoice_access
@@ -524,7 +512,7 @@ def register_routes(app, database):
         records = set(session.get("authorized_records", []))
         records.discard(record_id)
         session["authorized_records"] = sorted(records)
-        flash("This invoice has been locked on this browser.", "success")
+        flash("This invoice has been closed on this browser.", "success")
         return redirect(url_for("home", record_id=record_id))
 
     @app.errorhandler(400)
